@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Servers - MineDash</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen flex">
+  {% include 'admin/_sidebar.html' %}
+
+  <main class="flex-1 p-10">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">My Servers</h1>
+      <a href="/dashboard/create_server" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
+        + Create New Server
+      </a>
+    </div>
+
+    {% if servers %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for server in servers %}
+          <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold">{{ server.name }}</h2>
+            <p class="text-gray-600 mt-1">Version: {{ server.version }}</p>
+            <p class="text-gray-600">Loader: {{ server.loader }}</p>
+            <p class="text-gray-600">Created: {{ server.created_at }}</p>
+            <a href="/dashboard/server_management/{{ server.id }}" class="text-blue-600 mt-4 inline-block hover:underline">Manage</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>No servers found. Create one to get started!</p>
+    {% endif %}
+  </main>
+</body>
+</html>

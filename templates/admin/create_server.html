@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Server - MineDash</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Search function to filter rules
+    function filterRules() {
+      let input = document.getElementById("ruleSearch").value.toLowerCase();
+      let ruleItems = document.querySelectorAll(".rule-item");
+      ruleItems.forEach(function(rule) {
+        let label = rule.querySelector("label").innerText.toLowerCase();
+        if (label.includes(input)) {
+          rule.style.display = "block";
+        } else {
+          rule.style.display = "none";
+        }
+      });
+    }
+  </script>
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen flex">
+  {% include 'admin/_sidebar.html' %}
+
+  <main class="flex-1 p-10 space-y-6">
+    <h1 class="text-3xl font-bold mb-6">Create a New Minecraft Server</h1>
+
+    <form method="POST" class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto space-y-6">
+
+      <!-- Server Name -->
+      <div>
+        <label class="block mb-2 font-semibold text-lg">Server Name</label>
+        <input type="text" name="server_name" class="w-full p-3 border rounded-md text-gray-900" placeholder="Enter Server Name" required>
+      </div>
+
+      <!-- Version Selection (Minecraft, Loader, Installer) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block mb-2 font-semibold text-lg">Minecraft Version</label>
+          <select name="mc_version" class="w-full p-3 border rounded-md text-gray-900" required>
+            {% for version in game_versions %}
+              <option value="{{ version.version }}">{{ version.version }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2 font-semibold text-lg">Loader Version</label>
+          <select name="loader_version" class="w-full p-3 border rounded-md text-gray-900" required>
+            {% for loader in loader_versions %}
+              <option value="{{ loader.loader.version }}">{{ loader.loader.version }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2 font-semibold text-lg">Installer Version</label>
+          <select name="installer_version" class="w-full p-3 border rounded-md text-gray-900" required>
+            {% for installer in installer_versions %}
+              <option value="{{ installer.version }}">{{ installer.version }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Server Config (Port, Max Players, MOTD, etc.) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Port -->
+        <div>
+          <label class="block mb-2 font-semibold text-lg">Server Port</label>
+          <input type="number" name="server_port" class="w-full p-3 border rounded-md text-gray-900" value="25565" min="1" max="65535" required>
+        </div>
+
+        <!-- Max Players -->
+        <div>
+          <label class="block mb-2 font-semibold text-lg">Max Players</label>
+          <input type="number" name="max_players" class="w-full p-3 border rounded-md text-gray-900" value="20" min="1" max="100" required>
+        </div>
+
+        <!-- MOTD -->
+        <div class="md:col-span-2">
+          <label class="block mb-2 font-semibold text-lg">Message of the Day (MOTD)</label>
+          <input type="text" name="motd" class="w-full p-3 border rounded-md text-gray-900" value="A Minecraft Server" required>
+        </div>
+
+        <!-- Game Mode -->
+        <div>
+          <label class="block mb-2 font-semibold text-lg">Game Mode</label>
+          <select name="gamemode" class="w-full p-3 border rounded-md text-gray-900" required>
+            <option value="survival">Survival</option>
+            <option value="creative">Creative</option>
+            <option value="adventure">Adventure</option>
+            <option value="spectator">Spectator</option>
+          </select>
+        </div>
+
+        <!-- Difficulty -->
+        <div>
+          <label class="block mb-2 font-semibold text-lg">Difficulty</label>
+          <select name="difficulty" class="w-full p-3 border rounded-md text-gray-900" required>
+            <option value="peaceful">Peaceful</option>
+            <option value="easy">Easy</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+
+        <!-- Whitelist -->
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" name="white_list" id="white_list" class="h-5 w-5 text-blue-600">
+          <label for="white_list" class="font-semibold text-lg">Enable Whitelist</label>
+        </div>
+
+        <!-- Spawn Protection -->
+        <div>
+          <label class="block mb-2 font-semibold text-lg">Spawn Protection</label>
+          <input type="number" name="spawn_protection" class="w-full p-3 border rounded-md text-gray-900" value="16" min="0" max="100">
+        </div>
+      </div>
+
+      <!-- Server Rules Section -->
+      <div>
+        <label class="block mb-2 font-semibold text-lg">Select Server Rules</label>
+        <input type="text" id="ruleSearch" class="w-full p-3 mb-6 border rounded-md text-gray-900" oninput="filterRules()" placeholder="Search for rules...">
+
+        <div class="space-y-4 max-h-60 overflow-auto">
+          <!-- List of rules -->
+          {% for rule in server_properties %}
+            <div class="rule-item">
+              <label class="block flex items-center">
+                <input type="checkbox" name="server_rules" value="{{ rule.key }}" class="mr-2 h-5 w-5">
+                <span>{{ rule.name }}: {{ rule.description }}</span>
+              </label>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-lg">
+        Create Server
+      </button>
+    </form>
+  </main>
+</body>
+</html>

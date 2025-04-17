@@ -1,0 +1,124 @@
+<!-- templates/server_management.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Server Management - MineDash</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex">
+
+  <!-- Sidebar -->
+  {% include "admin/_sidebar.html" %}
+
+  <!-- Main Content -->
+  <main class="flex-1 p-8 space-y-8">
+    <h1 class="text-3xl font-bold">Server Management</h1>
+
+    <!-- 1. Create / Clone Server -->
+    <section class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-2xl font-semibold mb-4">Create / Clone Server</h2>
+      <form method="POST" action="{{ url_for('create_server') }}" class="space-y-4">
+        <input name="name" placeholder="Server Name" class="w-full p-2 border rounded" required>
+        <select name="template" class="w-full p-2 border rounded">
+          {% for tmpl in templates %}
+            <option value="{{ tmpl.id }}">{{ tmpl.name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Create</button>
+      </form>
+    </section>
+
+    <!-- 2. Controls: Start / Stop / Restart -->
+    <section class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-2xl font-semibold mb-4">Instance Controls</h2>
+      <div class="space-x-4">
+        <button onclick="action('start')" class="bg-green-500 px-4 py-2 rounded">Start</button>
+        <button onclick="action('stop')" class="bg-red-500 px-4 py-2 rounded">Stop</button>
+        <button onclick="action('restart')" class="bg-yellow-500 px-4 py-2 rounded">Restart</button>
+      </div>
+      <pre id="console" class="mt-4 h-40 overflow-auto bg-black text-white p-2 rounded"></pre>
+    </section>
+
+    <!-- 3. Configuration Files -->
+    <section class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-2xl font-semibold mb-4">Configuration Files</h2>
+      <ul class="list-disc pl-5 space-y-2">
+        {% for file in config_files %}
+          <li>
+            <a href="{{ url_for('edit_file', name=file) }}" class="text-blue-600 hover:underline">{{ file }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <!-- 4. Player Management -->
+    <section class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-2xl font-semibold mb-4">Player Management</h2>
+      <table class="w-full text-left">
+        <thead><tr><th>Name</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for player in online_players %}
+          <tr>
+            <td>{{ player.name }}</td>
+            <td>
+              <button onclick="kick('{{ player.name }}')" class="text-red-500 hover:underline">Kick</button>
+              <button onclick="ban('{{ player.name }}')" class="text-red-500 hover:underline ml-2">Ban</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 5. Mods & Plugins -->
+    <section class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-2xl font-semibold mb-4">Mods & Plugins</h2>
+      <ul class="space-y-2 max-h-48 overflow-y-auto">
+        {% for mod in mods %}
+          <li>
+            <a href="{{ mod.url }}" target="_blank" class="text-blue-600 hover:underline">
+              {{ mod.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <!-- 6. Monitoring & Backups -->
+    <section class="bg-white rounded-lg shadow p-6 grid grid-cols-2 gap-6">
+      <div>
+        <h3 class="font-semibold mb-2">Performance</h3>
+        <p>CPU: {{ stats.cpu }}%</p>
+        <p>RAM: {{ stats.ram }}%</p>
+        <p>Disk I/O: {{ stats.disk_io }} MB/s</p>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2">Backups</h3>
+        <ul class="list-disc pl-5 space-y-1">
+          {% for b in backups %}
+            <li>
+              {{ b.timestamp }}
+              <button onclick="restore('{{ b.id }}')" class="text-blue-600 hover:underline ml-2">Restore</button>
+            </li>
+          {% endfor %}
+        </ul>
+        <button onclick="backup()" class="mt-4 bg-blue-500 px-4 py-2 rounded">New Backup</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function action(cmd) {
+      fetch(`{{ url_for('server_action', server_id=server.id) }}?cmd=${cmd}`)
+        .then(r => r.text())
+        .then(txt => document.getElementById('console').textContent += txt);
+    }
+    function kick(user) { /* ... */ }
+    function ban(user) { /* ... */ }
+    function backup(){ /* ... */ }
+    function restore(id){ /* ... */ }
+  </script>
+</body>
+</html>

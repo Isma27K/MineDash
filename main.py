@@ -74,6 +74,8 @@ def login():
 
         if user and user.password == password:  # Check if user exists and password matches
             session['user'] = user_name  # Store user email or ID in session
+            session['admin'] = True if user.is_admin else False
+
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid credentials', 'error')
@@ -86,17 +88,140 @@ def dashboard():
     if 'user' not in session:
         return redirect(url_for('login'))
 
+    if session['admin']:
+        return render_template(
+            'admin/admin_dashboard.html',
+            user_name=session['user'],
+            server_ip='play.example.com',
+            server_port=25565,
+            active_players=5,
+            mc_version='1.20.4',
+            total_mods=22,
+            uptime='3 days, 12 hours'
+        )
+    else:
+        return render_template(
+            'dashboard.html',
+            user_name=session['user'],
+            server_ip='play.example.com',
+            server_port=25565,
+            active_players=5,
+            mc_version='1.20.4',
+            total_mods=22,
+            uptime='3 days, 12 hours'
+        )
+
+
+@app.route('/dashboard/server_management')
+def server_management():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+
+    if session['admin']:
+        return render_template(
+            'admin/server_list.html',
+            # Example data to simulate server list
+            servers=[
+                {
+                    "id": 1,
+                    "name": "Survival World",
+                    "version": "1.20.4",
+                    "loader": "0.15.7",
+                    "created_at": "2025-04-17"
+                },
+                {
+                    "id": 2,
+                    "name": "Modded SMP",
+                    "version": "1.19.2",
+                    "loader": "0.14.11",
+                    "created_at": "2025-04-01"
+                },
+                {
+                    "id": 3,
+                    "name": "Creative Server",
+                    "version": "1.18.2",
+                    "loader": "0.14.8",
+                    "created_at": "2025-03-12"
+                }
+            ]
+
+        )
+        # return render_template(
+        #     "admin/server_management.html",
+        #         user_name="Isma",
+        #         templates=[
+        #             {"id": "vanilla-1.20.1", "name": "Vanilla 1.20.1"},
+        #             {"id": "paper", "name": "PaperMC"}
+        #         ],
+        #         config_files=["server.properties", "bukkit.yml", "whitelist.json"],
+        #         online_players=[
+        #             {"name": "Steve"},
+        #             {"name": "Alex"}
+        #         ],
+        #         mods=[
+        #             {"name": "JourneyMap", "url": "https://www.curseforge.com/journeymap"},
+        #             {"name": "WorldEdit", "url": "https://enginehub.org/worldedit"}
+        #         ],
+        #         stats={
+        #             "cpu": 23,
+        #             "ram": 62,
+        #             "disk_io": 1.2
+        #         },
+        #         backups=[
+        #             {"id": "b1", "timestamp": "2025-04-17 22:45"},
+        #             {"id": "b2", "timestamp": "2025-04-16 18:20"}
+        #         ],
+        #         server={
+        #             "id": "main-survival"}
+        #         )
+
+    else:
+        return redirect(url_for('dashboard'))
+
+@app.route('/dashboard/create_server')
+def create_server():
     return render_template(
-        'dashboard.html',
-        user_name=session['user'],
-        server_ip='play.example.com',
-        server_port=25565,
-        active_players=5,
-        mc_version='1.20.4',
-        total_mods=22,
-        uptime='3 days, 12 hours'
+        'admin/create_server.html',
+        server_properties=[
+            {'key': 'online-mode', 'name': 'Online Mode', 'description': 'Determines if players must authenticate with Minecraft servers.'},
+            {'key': 'spawn-protection', 'name': 'Spawn Protection',
+             'description': 'Radius of spawn protection (default 16).'},
+            {'key': 'pvp', 'name': 'PVP',
+             'description': 'Whether players can engage in player versus player combat (default true).'},
+            # Add more server properties as needed
+        ],
+        # Dummy data for rendering
+        game_versions=[
+            {"version": "1.16.5"},
+            {"version": "1.17.1"},
+            {"version": "1.18.2"},
+            {"version": "1.19.4"},
+            {"version": "1.20.1"},
+        ],
+        loader_versions = [
+            {"loader": {"version": "0.11.3"}},
+            {"loader": {"version": "0.11.4"}},
+            {"loader": {"version": "0.11.5"}},
+        ],
+        installer_versions = [
+            {"version": "1.0.0"},
+            {"version": "1.1.0"},
+            {"version": "1.2.0"},
+            {"version": "2.0.0"},
+        ]
     )
 
+@app.route('/edit_file', methods=['POST'])
+def edit_file():
+    return render_template(
+        '404.html'
+    )
+
+@app.route('/server_action', methods=['POST'])
+def server_action():
+    return render_template(
+        '404.html'
+    )
 
 @app.route('/logout')
 def logout():

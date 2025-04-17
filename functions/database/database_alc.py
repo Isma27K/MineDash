@@ -17,6 +17,16 @@ class User(Base):
     is_admin = Column(BOOLEAN, default=False)
     created_at = Column(DateTime, default=datetime.now())
 
+class Mods(Base):
+    __tablename__ = "mods"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    url = Column(String)
+    server_belongs = Column(Integer)
+    add_by = Column(Integer)
+    created_at = Column(DateTime, default=datetime.now())
+
 # ===============================================================
 
 # 3. Create a SQLite engine (file-based)
