@@ -5,12 +5,76 @@
   <title>MineDash</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center h-screen text-white">
+<body class="bg-gradient-to-br from-blue-500 to-purple-600 min-h-screen text-white">
 
-  <div class="text-center">
-    <h1 class="text-5xl font-bold mb-4">Hello, Isma 👋</h1>
-    <p class="text-xl">Welcome to MineDash!</p>
+  <!-- Header -->
+  <header class="flex justify-between items-center p-6">
+    <h1 class="text-2xl font-semibold">MineDash</h1>
+    <a href="/login" class="bg-white text-blue-600 font-medium px-4 py-2 rounded-lg shadow hover:bg-gray-100 transition">
+      Login
+    </a>
+  </header>
+
+  <!-- Main Content -->
+  <div class="flex flex-col items-center justify-center px-4 py-10">
+    <h1 class="text-5xl font-bold mb-4 text-center">Hello 👋</h1>
+    <p class="text-xl mb-10 text-center">Welcome to MineDash!</p>
+
+    <!-- Server Info Card -->
+    <div class="bg-white text-gray-800 rounded-2xl shadow-lg p-8 w-full max-w-xl">
+      <h2 class="text-2xl font-bold mb-6">Minecraft Server Info</h2>
+      <div class="space-y-3 text-lg">
+        <p><span class="font-semibold">Server IP:</span> {{ server_ip }}</p>
+        <p><span class="font-semibold">Port:</span> {{ server_port }}</p>
+        <p><span class="font-semibold">Active Players:</span> {{ active_players }}</p>
+        <p><span class="font-semibold">Minecraft Version:</span> {{ mc_version }}</p>
+        <p><span class="font-semibold">Total Mods:</span> {{ total_mods }}</p>
+        <p><span class="font-semibold">Uptime:</span> {{ uptime }}</p>
+      </div>
+    </div>
+
+    <!-- Installed Mods Section -->
+    <div class="bg-white text-gray-800 rounded-2xl shadow-lg p-8 w-full max-w-xl mt-8">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold">Installed Mods ({{ mods|length }})</h2>
+        <!-- simple client‑side filter -->
+        <input
+          id="modSearch"
+          type="text"
+          placeholder="Search mods…"
+          class="px-3 py-1 border rounded text-gray-700"
+          oninput="filterMods()"
+        />
+      </div>
+
+      <!-- scrollable mod list -->
+      <ul id="modsList" class="space-y-2 max-h-64 overflow-y-auto">
+        {% for mod in mods %}
+          <li>
+            <a
+              href="{{ mod.url }}"
+              target="_blank"
+              rel="noopener"
+              class="text-blue-600 hover:underline"
+            >
+              {{ mod.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
+
+  <!-- JavaScript for Filtering Mods -->
+  <script>
+    function filterMods() {
+      const q = document.getElementById('modSearch').value.toLowerCase();
+      document.querySelectorAll('#modsList li').forEach(li => {
+        const name = li.textContent.toLowerCase();
+        li.style.display = name.includes(q) ? '' : 'none';
+      });
+    }
+  </script>
 
 </body>
 </html>
