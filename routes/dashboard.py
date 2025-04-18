@@ -47,29 +47,25 @@ def server_management():
         return redirect(url_for('main.login'))
 
     if session['admin']:
+        server_list = []
+        server = db_session.query(Servers).all()
+
+        for s in server:
+            server_list.append({
+                'id': s.id,
+                'name': s.name,
+                'version': s.mc_version,
+                'loader': s.loader_version,
+                'created_at': s.created_at,
+                'player_count': 1,
+                'max_players': s.max_players,
+                'status': "offline",
+            })
+
         return render_template(
             'admin/server_list.html',
             # Example data to simulate server list
-            servers=[
-                {
-                    "id": 1,
-                    "name": "Survival World",
-                    "version": "1.20.4",
-                    "loader": "0.15.7",
-                    "created_at": "2025-04-17",
-                    "player_count": 6,
-                    "max_players": 10,
-                    "status": "online"
-                },
-                {
-                    "id": 2,
-                    "name": "Modded SMP",
-                    "version": "1.19.2",
-                    "loader": "0.14.11",
-                    "created_at": "2025-04-01"
-                },
-            ]
-
+            servers=server_list
         )
 
 
