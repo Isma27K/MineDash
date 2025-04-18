@@ -23,6 +23,8 @@ class Mods(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     url = Column(String)
+    version = Column(String)
+    description = Column(String)
     server_belongs = Column(Integer)
     add_by = Column(Integer)
     created_at = Column(DateTime, default=datetime.now())
@@ -41,6 +43,7 @@ class Servers(Base):
     difficulty = Column(String)
     max_players = Column(Integer)
     port = Column(Integer)
+    status = Column(BOOLEAN, default=False)
     created_by = Column(Integer)
     created_at = Column(DateTime, default=datetime.now())
 

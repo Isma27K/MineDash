@@ -66,6 +66,37 @@
 <body class="bg-gray-50 text-gray-900 min-h-screen flex">
   {% include 'admin/_sidebar.html' %}
 
+  <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-6">
+          {% for category, message in messages %}
+            {% set alert_class = {
+              'success': 'bg-green-100 text-green-800 border-green-200',
+              'error': 'bg-red-100 text-red-800 border-red-200',
+              'warning': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+              'info': 'bg-blue-100 text-blue-800 border-blue-200'
+            } %}
+            {% set icon_class = {
+              'success': 'fa-check-circle text-green-500',
+              'error': 'fa-exclamation-circle text-red-500',
+              'warning': 'fa-exclamation-triangle text-yellow-500',
+              'info': 'fa-info-circle text-blue-500'
+            } %}
+            <div class="flex items-center p-4 mb-3 rounded-lg border {{ alert_class.get(category, 'bg-gray-100 text-gray-800 border-gray-200') }} animate-fade-in">
+              <div class="flex-shrink-0 mr-3">
+                <i class="fas {{ icon_class.get(category, 'fa-info-circle text-gray-500') }}"></i>
+              </div>
+              <div class="flex-1">{{ message }}</div>
+              <button type="button" class="flash-close ml-auto text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
   <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto">
     <div class="flex items-center justify-between mb-8">
       <h1 class="text-3xl font-bold text-gray-800">Create a New Minecraft Server</h1>

@@ -1,13 +1,18 @@
 import json
 import os
 
-from flask import Blueprint, session, redirect, url_for, render_template, request, flash
+from flask import Blueprint, session, redirect, url_for, render_template, request, flash, jsonify
 import urllib.request
-from functions.database.database_alc import User, Servers, db_session
+
+from starlette.responses import JSONResponse
+from werkzeug.utils import secure_filename
+
+from functions.database.database_alc import User, Servers, db_session, Mods
 
 from functions.database.db_related import get_server_id_by_name
 from functions.minecraft_management.management import create_server_real
 from utils.file import file_manipulator
+from utils.system_util import cpu_percent, used_ram_percent, avg_io_mb
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 server_eco = os.getenv('SERVER_PATH')
@@ -59,7 +64,7 @@ def server_management():
                 'created_at': s.created_at,
                 'player_count': 1,
                 'max_players': s.max_players,
-                'status': "offline",
+                'status': "online" if s.status else "offline",
             })
 
         return render_template(
@@ -215,16 +220,18 @@ def server_management_server(server_id):
     if 'user' not in session:
         return redirect(url_for('main.login'))
 
-    # Dummy server data
+    server = db_session.query(Servers).filter(Servers.id == server_id).first()
+    server_mods = db_session.query(Mods).filter(Mods.server_belongs == server_id).all()
+
     server = {
         'id': server_id,
-        'name': 'Survival World',
-        'status': 'online',  # options: 'online', 'offline', 'starting', 'stopping'
-        'version': '1.19.2',
-        'loader': 'Paper',
-        'created_at': '2023-04-15',
+        'name': server.name,
+        'status': 'online' if server.status else 'offline',  # options: 'online', 'offline', 'starting', 'stopping'
+        'version': server.mc_version,
+        'loader': server.loader_version,
+        'created_at': server.created_at,
         'player_count': 3,
-        'max_players': 20
+        'max_players': server.max_players
     }
 
     # Dummy templates for server creation
@@ -252,20 +259,16 @@ def server_management_server(server_id):
         {'name': 'EnderDragon99', 'uuid': 'mno-345-pqr-678'}
     ]
 
-    # Dummy mods/plugins
-    mods = [
-        {'name': 'EssentialsX', 'url': 'https://www.spigotmc.org/resources/essentialsx.9089/'},
-        {'name': 'WorldEdit', 'url': 'https://dev.bukkit.org/projects/worldedit'},
-        {'name': 'Vault', 'url': 'https://www.spigotmc.org/resources/vault.34315/'},
-        {'name': 'LuckPerms', 'url': 'https://www.spigotmc.org/resources/luckperms.28140/'},
-        {'name': 'CoreProtect', 'url': 'https://www.spigotmc.org/resources/coreprotect.8631/'}
-    ]
+    mods = []
+
+    for mod in server_mods:
+        mods.append({'name': mod.name, 'url': mod.url, 'id': mod.id, "server_id": mod.server_belongs})
 
     # Dummy performance stats
     stats = {
-        'cpu': 35,
-        'ram': 42,
-        'disk_io': 3.8
+        'cpu': cpu_percent,
+        'ram': used_ram_percent,
+        'disk_io': avg_io_mb
     }
 
     # Dummy backups
@@ -290,3 +293,106 @@ def server_management_server(server_id):
         # Non-admin users don't have access
         flash('You do not have permission to view this page.', 'error')
         return redirect(url_for('dashboard.dashboard'))
+
+
+@dashboard_bp.route("/mods/<int:server_id>", methods=["GET"])
+def upload_mods_page(server_id):
+
+    if 'user' not in session:
+        return redirect(url_for('main.login'))
+
+    server_data = db_session.query(Servers).filter(Servers.id == server_id).first()
+
+    server = {
+        "id": server_id,
+        "name": server_data.name,
+        "version": server_data.mc_version,
+        "loader": server_data.loader_version,
+        "status": "online" if server_data.status else "offline",
+        "created_at": server_data.created_at,
+        "player_count": 3,
+        "max_players": server_data.max_players,
+    }
+
+    return render_template(
+        'add_mods.html',
+        server=server,
+    )
+
+
+@dashboard_bp.route("/server_management/<int:server_id>/add_mods", methods=["POST"])
+def upload_mods(server_id):
+    ALLOWED_EXTENSIONS = {'jar'}
+
+    # Get server info once
+    server = db_session.query(Servers).filter(Servers.id == server_id).first()
+    if server is None:
+        flash('Server not found', 'error')
+        return redirect(url_for('dashboard.dashboard'))
+
+    # Define upload path using server name
+    # Assuming server_eco is defined elsewhere - if not, define it appropriately
+    UPLOAD_FOLDER = os.path.join(server_eco, "server_eco", server.name, "mods")
+
+    # Create function to check file extensions
+    def allowed_file(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+    # Ensure the folder exists
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+    # Get current user
+    user = db_session.query(User).filter_by(name=session.get('user')).first()
+    if not user:
+        flash('User not authenticated', 'error')
+        return redirect(url_for('auth.login'))
+
+    uploaded_files = request.files.getlist('mod_files')
+    mod_names = request.form.getlist('mod_names[]')
+    mod_versions = request.form.getlist('mod_versions[]')
+    mod_links = request.form.getlist('mod_links[]')
+    mod_descriptions = request.form.getlist('mod_descriptions[]')
+
+    if not uploaded_files or uploaded_files[0].filename == '':
+        flash('No mod files uploaded', 'error')
+        return redirect(url_for('dashboard.upload_mods_page', server_id=server_id))
+
+    successful_uploads = 0
+
+    for idx, file in enumerate(uploaded_files):
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            save_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(save_path)
+
+            # Use safer list access with default values
+            mod_name = mod_names[idx] if idx < len(mod_names) else filename
+            mod_version = mod_versions[idx] if idx < len(mod_versions) else ""
+            mod_link = mod_links[idx] if idx < len(mod_links) else ""
+            mod_description = mod_descriptions[idx] if idx < len(mod_descriptions) else ""
+
+            # Create and save mod to database
+            try:
+                new_mod = Mods(
+                    name=filename,  # Fixed from mod_info.name
+                    url=mod_link,  # Fixed from mods_info.link
+                    server_belongs=server.id,
+                    add_by=user.id,
+                    version=mod_version,
+                    description=mod_description
+                )
+                db_session.add(new_mod)
+                db_session.commit()
+                successful_uploads += 1
+            except Exception as e:
+                db_session.rollback()
+                flash(f'Error saving mod to database: {str(e)}', 'error')
+                # Continue to next file instead of stopping completely
+                continue
+        else:
+            flash(f'Invalid file type for {file.filename if file.filename else "unnamed file"}', 'error')
+
+    if successful_uploads > 0:
+        flash(f'Successfully uploaded {successful_uploads} mod(s)', 'success')
+
+    return redirect(url_for('dashboard.server_management_server', server_id=server_id))

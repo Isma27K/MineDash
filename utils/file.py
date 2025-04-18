@@ -1,3 +1,6 @@
+from functions.state import global_holder
+
+
 def file_manipulator(target, key, updated_value):
     with open(target, "r") as file:
         lines = file.readlines()
@@ -13,3 +16,5 @@ def file_manipulator(target, key, updated_value):
 
     with open(target, "w") as file:
         file.writelines(lines)
+
+

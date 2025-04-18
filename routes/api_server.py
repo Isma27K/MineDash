@@ -4,11 +4,13 @@ import time
 import os
 from dotenv import load_dotenv
 
+from functions.ngrok.ngrok_controlar import start_ngrok
+from routes.dashboard import server_eco
 from utils._customtestconsole import read_output
 from flask import Blueprint, request, jsonify, redirect, url_for
 
 from functions.state import global_holder
-from functions.database.database_alc import db_session, Servers
+from functions.database.database_alc import db_session, Servers, Mods
 
 load_dotenv()
 
@@ -24,11 +26,13 @@ def server_action(server_id):
     else:  # POST
         cmd = request.form.get('cmd')
 
+    server = db_session.query(Servers).filter_by(id=server_id).first()
+
     # In a real app, this would trigger actual server control commands
     if cmd == 'start':
-        if global_holder.server_process and global_holder.server_process.poll() is None:
+        if global_holder.server_process and global_holder.server_process.poll() is None and server.status == False:
             print("Server is already running.")
-            return jsonify({"status": "already_running"})
+            return jsonify({"status": "a server is already running"})
 
         print(f"Starting server {server_id}...")
         db_server = db_session.query(Servers).filter_by(id=server_id).first()
@@ -54,27 +58,43 @@ def server_action(server_id):
             )
 
             threading.Thread(target=read_output, daemon=True).start()
+
+            ngrok_thread = threading.Thread(target=start_ngrok, args=(db_server.port, "tcp"), daemon=True)
+            ngrok_thread.start()
+
             print("Server started.")
+
+            # Update a server's status to False
+            db_session.query(Servers).filter_by(id=server_id).update({"status": True})
+            db_session.commit()
+            db_session.close()
+
             return jsonify({"status": "started"})
         except Exception as e:
             return jsonify({"status": "error", "message": str(e)}), 500
 
     elif cmd == 'stop':
         # Implement proper server stopping logic
-        if global_holder.server_process and global_holder.server_process.poll() is None:
+        if global_holder.server_process and global_holder.server_process.poll() is None and server.status == True:
             # Send stop command to stdin
             global_holder.server_process.stdin.write("stop\n")
             global_holder.server_process.stdin.flush()
             # Wait for process to end
             global_holder.server_process.wait()
             global_holder.server_process = None
+
+            # Update a server's status to False
+            db_session.query(Servers).filter_by(id=server_id).update({"status": False})
+            db_session.commit()
+            db_session.close()
+
             return jsonify({"status": "stopped"})
         return jsonify({"status": "not_running"})
 
     elif cmd == 'restart':
-        if global_holder.server_process and global_holder.server_process.poll() is None:
+        if global_holder.server_process and global_holder.server_process.poll() is None and server.status == True:
             # Send stop command to stdin
-            global_holder.server_process.stdin.write("restart\n")
+            global_holder.server_process.stdin.write("/restart\n")
             global_holder.server_process.stdin.flush()
             # Wait for process to end
             global_holder.server_process.wait()
@@ -167,3 +187,40 @@ def edit_file(server_id, name):
     else:
         # In a real app, this would open a file editor
         return f"File editor for {name} would appear here"
+
+
+@api_server_bp.route('/<int:server_id>/delete_mod', methods=['DELETE'])
+def delete_mod(server_id):
+    try:
+        # Ensure user has access to this server
+        server = db_session.query(Servers).filter_by(id=server_id).first()
+        if not server:
+            return jsonify({'success': False, 'error': 'Server not found'})
+
+        # Get the mod ID from the query parameter
+        mod_id = request.args.get('mod_id')
+        if not mod_id:
+            return jsonify({'success': False, 'error': 'Mod ID is required'})
+
+        # Find the mod - use server_belongs instead of server_id
+        mod = db_session.query(Mods).filter_by(id=mod_id, server_belongs=server_id).first()
+        if not mod:
+            return jsonify({'success': False, 'error': 'Mod not found'})
+
+        # Delete the mod file if the filename attribute exists
+        # if hasattr(mod, 'filename') and mod.name:
+        mod_file_path = os.path.join(server_eco, "server_eco", server.name, "mods", mod.name)
+
+        if os.path.exists(mod_file_path):
+            os.remove(mod_file_path)
+        # If there's no filename attribute but you still need to delete the file,
+        # you might need an alternative approach based on your model structure
+
+        # Remove from database
+        db_session.delete(mod)
+        db_session.commit()
+
+        return jsonify({'success': True})
+    except Exception as e:
+        db_session.rollback()
+        return jsonify({'success': False, 'error': str(e)})

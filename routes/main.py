@@ -1,31 +1,64 @@
-from flask import Blueprint, request, render_template, session, redirect, url_for, flash
-from functions.database.database_alc import User, db_session as db_session
+from urllib.parse import urlparse
 
+from flask import Blueprint, request, render_template, session, redirect, url_for, flash
+from functions.database.database_alc import User, db_session as db_session, Servers, Mods
+from functions.state import global_holder
 
 main_bp = Blueprint("main", __name__)
 
+
 @main_bp.route("/", methods=["GET"])
 def home():
+    # Default values when no server is online
+    server_ip = "No server online"
+    server_port = None
+    active_players = 0
+    mc_version = "N/A"
+    total_mods = 0
+    mods = []
 
-    # Dummy mods list
-    mods = [
-        {"name": "Baubles",        "url": "https://www.curseforge.com/minecraft/mc-mods/baubles"},
-        {"name": "Tinkers' Construct", "url": "https://www.curseforge.com/minecraft/mc-mods/tinkers-construct"},
-        {"name": "Biomes O' Plenty",   "url": "https://www.curseforge.com/minecraft/mc-mods/biomes-o-plenty"},
-        {"name": "Baubles", "url": "https://www.curseforge.com/minecraft/mc-mods/baubles"},
-        {"name": "Tinkers' Construct", "url": "https://www.curseforge.com/minecraft/mc-mods/tinkers-construct"},
-        # … potentially hundreds more …
-    ]
+    # Try to get an active server
+    server = db_session.query(Servers).filter(Servers.status == True).first()
+
+    if server:
+        # If a server exists, get its mods
+        server_mods = db_session.query(Mods).filter(Mods.server_belongs == server.id).all()
+
+        # Process mods if there are any
+        if server_mods:
+            mods = [{"name": mod.name, "url": mod.url} for mod in server_mods]
+            total_mods = len(mods)
+
+        # Set Minecraft version
+        mc_version = server.mc_version
+
+        # Try to get the ngrok URL if active
+        try:
+            if hasattr(global_holder, 'active_listener') and global_holder.active_listener:
+                server_ip = global_holder.active_listener.url()
+            else:
+                server_ip = "Tunnel not established"
+        except Exception as e:
+            server_ip = "Tunnel error"
+            print(f"Error getting tunnel URL: {str(e)}")
+
+        # Extract the port from the server_ip
+        try:
+            parsed = urlparse(server_ip)
+            server_port = parsed.port
+        except Exception as e:
+            print(f"Error parsing server IP: {str(e)}")
+            server_port = None
 
     return render_template(
         "index.html",
         user_name="Isma",
-        server_ip="play.example.com",
-        server_port=25565,
-        active_players=12,
-        mc_version="1.20.4",
-        total_mods=32,
-        uptime="4 days, 3 hours",
+        server_ip=server_ip,
+        server_port=server_port,
+        active_players=active_players,
+        mc_version=mc_version,
+        total_mods=total_mods,
+        uptime="Feature coming soon",
         mods=mods
     )
 
