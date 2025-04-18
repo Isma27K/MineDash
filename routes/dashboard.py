@@ -3,7 +3,7 @@ import os
 
 from flask import Blueprint, session, redirect, url_for, render_template, request, flash
 import urllib.request
-from functions.database.database_alc import User, session
+from functions.database.database_alc import User, Servers, db_session
 
 from functions.database.db_related import get_server_id_by_name
 from functions.minecraft_management.management import create_server_real
@@ -105,10 +105,26 @@ def create_server():
 
             server_env = server_eco + f"/server_eco/{server_name}"
 
+            server = db_session.query(Servers).filter(Servers.name == server_name).first()
+            if server is not None:
+                flash('Server name already exists', 'error')
+                return redirect(url_for('dashboard.create_server'))
+
             print("Starting to create a server...")
 
             # Create the server and handle errors
             success = create_server_real(server_name, mc_version, loader_version, installer_version)
+
+            # try to save to database
+            user = db_session.query(User).filter_by(name=session['user']).first()
+            new_db = Servers(
+                name=server_name, mc_version=mc_version, loader_version=loader_version,
+                installer_version=installer_version, motd=motd, gamemode=gamemode, difficulty=difficulty,
+                max_players=int(max_players), port=int(server_port), created_by=user.id
+            )
+
+            db_session.add(new_db)
+            db_session.commit()
 
             if not success:
                 flash('Server creation failed', 'error')

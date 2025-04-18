@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, session, redirect, url_for, flash
-from functions.database.database_alc import User, session as db_session
+from functions.database.database_alc import User, db_session as db_session
 
 
 main_bp = Blueprint("main", __name__)

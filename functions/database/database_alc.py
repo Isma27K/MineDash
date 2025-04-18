@@ -33,6 +33,13 @@ class Servers(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    mc_version = Column(String)
+    loader_version = Column(String)
+    installer_version = Column(String)
+    motd = Column(String)
+    gamemode = Column(String)
+    difficulty = Column(String)
+    max_players = Column(Integer)
     port = Column(Integer)
     created_by = Column(Integer)
     created_at = Column(DateTime, default=datetime.now())
@@ -47,4 +54,4 @@ Base.metadata.create_all(engine)
 
 # 5. Create a session
 Session = sessionmaker(bind=engine)
-session = Session()
+db_session = Session()
