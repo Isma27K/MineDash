@@ -102,7 +102,7 @@ def create_server():
             whitelist = request.form.get('white_list', 'false')
             pvp = request.form.get('pvp', 'off')
             server_port = request.form.get('server_port', '25565')
-            online_mode = request.form.get('online_mode', 'on')
+            online_mode = request.form.get('online_mode', 'off')
 
             server_env = server_eco + f"/server_eco/{server_name}"
 
