@@ -27,10 +27,20 @@ class Mods(Base):
     add_by = Column(Integer)
     created_at = Column(DateTime, default=datetime.now())
 
+
+class Servers(Base):
+    __tablename__ = "servers"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    port = Column(Integer)
+    created_by = Column(Integer)
+    created_at = Column(DateTime, default=datetime.now())
+
 # ===============================================================
 
 # 3. Create a SQLite engine (file-based)
-engine = create_engine('sqlite:///minedash.db', echo=True)
+engine = create_engine('sqlite:///minedash.db', echo=False)
 
 # 4. Create tables in the database
 Base.metadata.create_all(engine)

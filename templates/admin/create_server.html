@@ -2,143 +2,304 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Server - MineDash</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+
     // Search function to filter rules
     function filterRules() {
       let input = document.getElementById("ruleSearch").value.toLowerCase();
       let ruleItems = document.querySelectorAll(".rule-item");
+      let count = 0;
+
       ruleItems.forEach(function(rule) {
         let label = rule.querySelector("label").innerText.toLowerCase();
         if (label.includes(input)) {
-          rule.style.display = "block";
+          rule.style.display = "flex";
+          count++;
         } else {
           rule.style.display = "none";
         }
       });
+
+      document.getElementById("searchResultCount").innerText = count + " results found";
+    }
+
+    function toggleSection(id) {
+      const section = document.getElementById(id);
+      const icon = document.getElementById(id + 'Icon');
+
+      if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+      } else {
+        section.classList.add('hidden');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+      }
     }
   </script>
 </head>
-<body class="bg-gray-100 text-gray-900 min-h-screen flex">
+<body class="bg-gray-50 text-gray-900 min-h-screen flex">
   {% include 'admin/_sidebar.html' %}
 
-  <main class="flex-1 p-10 space-y-6">
-    <h1 class="text-3xl font-bold mb-6">Create a New Minecraft Server</h1>
+  <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">Create a New Minecraft Server</h1>
+      <a href="/dashboard/server_management" class="text-primary-600 hover:text-primary-800 flex items-center">
+        <i class="fas fa-arrow-left mr-2"></i> Back to Servers
+      </a>
+    </div>
 
-    <form method="POST" class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto space-y-6">
-
-      <!-- Server Name -->
-      <div>
-        <label class="block mb-2 font-semibold text-lg">Server Name</label>
-        <input type="text" name="server_name" class="w-full p-3 border rounded-md text-gray-900" placeholder="Enter Server Name" required>
-      </div>
-
-      <!-- Version Selection (Minecraft, Loader, Installer) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block mb-2 font-semibold text-lg">Minecraft Version</label>
-          <select name="mc_version" class="w-full p-3 border rounded-md text-gray-900" required>
-            {% for version in game_versions %}
-              <option value="{{ version.version }}">{{ version.version }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="block mb-2 font-semibold text-lg">Loader Version</label>
-          <select name="loader_version" class="w-full p-3 border rounded-md text-gray-900" required>
-            {% for loader in loader_versions %}
-              <option value="{{ loader.loader.version }}">{{ loader.loader.version }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="block mb-2 font-semibold text-lg">Installer Version</label>
-          <select name="installer_version" class="w-full p-3 border rounded-md text-gray-900" required>
-            {% for installer in installer_versions %}
-              <option value="{{ installer.version }}">{{ installer.version }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
-
-      <!-- Server Config (Port, Max Players, MOTD, etc.) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Port -->
-        <div>
-          <label class="block mb-2 font-semibold text-lg">Server Port</label>
-          <input type="number" name="server_port" class="w-full p-3 border rounded-md text-gray-900" value="25565" min="1" max="65535" required>
+    <form method="POST" class="space-y-8">
+      <!-- Server Basics Card -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 flex justify-between items-center cursor-pointer" onclick="toggleSection('serverBasics')">
+          <h2 class="text-xl font-semibold flex items-center">
+            <i class="fas fa-server text-primary-500 mr-3"></i>
+            Server Basics
+          </h2>
+          <i id="serverBasicsIcon" class="fas fa-chevron-up text-gray-500"></i>
         </div>
 
-        <!-- Max Players -->
-        <div>
-          <label class="block mb-2 font-semibold text-lg">Max Players</label>
-          <input type="number" name="max_players" class="w-full p-3 border rounded-md text-gray-900" value="20" min="1" max="100" required>
-        </div>
+        <div id="serverBasics" class="px-6 pb-6 pt-2">
+          <!-- Server Name -->
+          <div class="mb-6">
+            <label class="block mb-2 font-medium text-gray-700">Server Name</label>
+            <input type="text" name="server_name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition"
+                   placeholder="My Awesome Minecraft Server" required>
+          </div>
 
-        <!-- MOTD -->
-        <div class="md:col-span-2">
-          <label class="block mb-2 font-semibold text-lg">Message of the Day (MOTD)</label>
-          <input type="text" name="motd" class="w-full p-3 border rounded-md text-gray-900" value="A Minecraft Server" required>
-        </div>
-
-        <!-- Game Mode -->
-        <div>
-          <label class="block mb-2 font-semibold text-lg">Game Mode</label>
-          <select name="gamemode" class="w-full p-3 border rounded-md text-gray-900" required>
-            <option value="survival">Survival</option>
-            <option value="creative">Creative</option>
-            <option value="adventure">Adventure</option>
-            <option value="spectator">Spectator</option>
-          </select>
-        </div>
-
-        <!-- Difficulty -->
-        <div>
-          <label class="block mb-2 font-semibold text-lg">Difficulty</label>
-          <select name="difficulty" class="w-full p-3 border rounded-md text-gray-900" required>
-            <option value="peaceful">Peaceful</option>
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-
-        <!-- Whitelist -->
-        <div class="flex items-center space-x-2">
-          <input type="checkbox" name="white_list" id="white_list" class="h-5 w-5 text-blue-600">
-          <label for="white_list" class="font-semibold text-lg">Enable Whitelist</label>
-        </div>
-
-        <!-- Spawn Protection -->
-        <div>
-          <label class="block mb-2 font-semibold text-lg">Spawn Protection</label>
-          <input type="number" name="spawn_protection" class="w-full p-3 border rounded-md text-gray-900" value="16" min="0" max="100">
-        </div>
-      </div>
-
-      <!-- Server Rules Section -->
-      <div>
-        <label class="block mb-2 font-semibold text-lg">Select Server Rules</label>
-        <input type="text" id="ruleSearch" class="w-full p-3 mb-6 border rounded-md text-gray-900" oninput="filterRules()" placeholder="Search for rules...">
-
-        <div class="space-y-4 max-h-60 overflow-auto">
-          <!-- List of rules -->
-          {% for rule in server_properties %}
-            <div class="rule-item">
-              <label class="block flex items-center">
-                <input type="checkbox" name="server_rules" value="{{ rule.key }}" class="mr-2 h-5 w-5">
-                <span>{{ rule.name }}: {{ rule.description }}</span>
-              </label>
+          <!-- Version Selection (Minecraft, Loader, Installer) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="block mb-2 font-medium text-gray-700">Minecraft Version</label>
+              <div class="relative">
+                <select name="mc_version" class="w-full p-3 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition" required>
+                  {% for version in game_versions %}
+                    <option value="{{ version.version }}">{{ version.version }}</option>
+                  {% endfor %}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
             </div>
-          {% endfor %}
+
+            <div>
+              <label class="block mb-2 font-medium text-gray-700">Loader Version</label>
+              <div class="relative">
+                <select name="loader_version" class="w-full p-3 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition" required>
+                  {% for loader in loader_versions %}
+                    <option value="{{ loader.loader.version }}">{{ loader.loader.version }}</option>
+                  {% endfor %}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-2 font-medium text-gray-700">Installer Version</label>
+              <div class="relative">
+                <select name="installer_version" class="w-full p-3 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition" required>
+                  {% for installer in installer_versions %}
+                    <option value="{{ installer.version }}">{{ installer.version }}</option>
+                  {% endfor %}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Submit -->
-      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-lg">
-        Create Server
-      </button>
+      <!-- Game Settings Card -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 flex justify-between items-center cursor-pointer" onclick="toggleSection('gameSettings')">
+          <h2 class="text-xl font-semibold flex items-center">
+            <i class="fas fa-gamepad text-primary-500 mr-3"></i>
+            Game Settings
+          </h2>
+          <i id="gameSettingsIcon" class="fas fa-chevron-up text-gray-500"></i>
+        </div>
+
+        <div id="gameSettings" class="px-6 pb-6 pt-2">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- MOTD -->
+            <div class="md:col-span-2">
+              <label class="block mb-2 font-medium text-gray-700">Message of the Day (MOTD)</label>
+              <input type="text" name="motd" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition"
+                     value="A Minecraft Server" required>
+              <p class="mt-1 text-sm text-gray-500">This message appears in the server list</p>
+            </div>
+
+            <!-- Game Mode -->
+            <div>
+              <label class="block mb-2 font-medium text-gray-700">Game Mode</label>
+              <div class="relative">
+                <select name="gamemode" class="w-full p-3 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition" required>
+                  <option value="survival">Survival</option>
+                  <option value="creative">Creative</option>
+                  <option value="adventure">Adventure</option>
+                  <option value="spectator">Spectator</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Difficulty -->
+            <div>
+              <label class="block mb-2 font-medium text-gray-700">Difficulty</label>
+              <div class="relative">
+                <select name="difficulty" class="w-full p-3 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition" required>
+                  <option value="peaceful">Peaceful</option>
+                  <option value="easy">Easy</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="hard">Hard</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Max Players -->
+            <div>
+              <label class="block mb-2 font-medium text-gray-700">Max Players</label>
+              <input type="number" name="max_players" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition"
+                     value="20" min="1" max="100" required>
+            </div>
+
+            <!-- Spawn Protection -->
+            <div>
+              <label class="block mb-2 font-medium text-gray-700">Spawn Protection</label>
+              <input type="number" name="spawn_protection" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition"
+                     value="16" min="0" max="100">
+              <p class="mt-1 text-sm text-gray-500">Radius around spawn where blocks can't be modified</p>
+            </div>
+          </div>
+
+          <div class="mt-6 space-y-4">
+            <div class="flex items-center">
+              <input type="checkbox" name="white_list" id="white_list" class="h-5 w-5 rounded text-primary-500 focus:ring-primary-400">
+              <label for="white_list" class="ml-2 font-medium text-gray-700">Enable Whitelist</label>
+              <span class="ml-2 text-sm text-gray-500">Only listed players can join the server</span>
+            </div>
+
+            <div class="flex items-center">
+              <input type="checkbox" name="pvp" id="pvp" class="h-5 w-5 rounded text-primary-500 focus:ring-primary-400" checked>
+              <label for="pvp" class="ml-2 font-medium text-gray-700">Enable PVP</label>
+              <span class="ml-2 text-sm text-gray-500">Allow players to fight each other</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network Settings Card -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 flex justify-between items-center cursor-pointer" onclick="toggleSection('networkSettings')">
+          <h2 class="text-xl font-semibold flex items-center">
+            <i class="fas fa-network-wired text-primary-500 mr-3"></i>
+            Network Settings
+          </h2>
+          <i id="networkSettingsIcon" class="fas fa-chevron-up text-gray-500"></i>
+        </div>
+
+        <div id="networkSettings" class="px-6 pb-6 pt-2">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Port -->
+            <div>
+              <label class="block mb-2 font-medium text-gray-700">Server Port</label>
+              <input type="number" name="server_port" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition"
+                     value="25565" min="1" max="65535" required>
+              <p class="mt-1 text-sm text-gray-500">Default: 25565</p>
+            </div>
+
+            <!-- Online Mode -->
+            <div class="flex items-center">
+              <input type="checkbox" name="online_mode" id="online_mode" class="h-5 w-5 rounded text-primary-500 focus:ring-primary-400" checked>
+              <label for="online_mode" class="ml-2 font-medium text-gray-700">Online Mode</label>
+              <span class="ml-2 text-sm text-gray-500">Checks player account authenticity</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Settings Card -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 flex justify-between items-center cursor-pointer" onclick="toggleSection('advancedSettings')">
+          <h2 class="text-xl font-semibold flex items-center">
+            <i class="fas fa-sliders-h text-primary-500 mr-3"></i>
+            Advanced Settings
+          </h2>
+          <i id="advancedSettingsIcon" class="fas fa-chevron-up text-gray-500"></i>
+        </div>
+
+        <div id="advancedSettings" class="px-6 pb-6 pt-2">
+          <!-- Search for rules -->
+          <div class="mb-4">
+            <div class="relative">
+              <input type="text" id="ruleSearch" class="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-300 focus:border-primary-500 outline-none transition"
+                     placeholder="Search for rules..." oninput="filterRules()">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <i class="fas fa-search text-gray-400"></i>
+              </div>
+            </div>
+            <p id="searchResultCount" class="mt-1 text-sm text-gray-500">All rules shown</p>
+          </div>
+
+          <!-- List of rules -->
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-60 overflow-auto">
+            {% for rule in server_properties %}
+              <div class="rule-item flex items-center py-2 px-1 hover:bg-gray-100 rounded transition">
+                <label class="flex items-start cursor-pointer w-full">
+                  <input type="checkbox" name="server_rules" value="{{ rule.key }}" class="mt-1 h-5 w-5 rounded text-primary-500 focus:ring-primary-400">
+                  <div class="ml-3">
+                    <span class="font-medium">{{ rule.name }}</span>
+                    <p class="text-sm text-gray-600">{{ rule.description }}</p>
+                  </div>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="flex justify-end">
+        <button type="submit" class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition flex items-center">
+          <i class="fas fa-plus mr-2"></i> Create Server
+        </button>
+      </div>
     </form>
   </main>
 </body>

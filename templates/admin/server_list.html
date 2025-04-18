@@ -2,34 +2,108 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Servers - MineDash</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body class="bg-gray-100 text-gray-900 min-h-screen flex">
+<body class="bg-gray-50 text-gray-900 min-h-screen flex">
   {% include 'admin/_sidebar.html' %}
 
-  <main class="flex-1 p-10">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold">My Servers</h1>
-      <a href="/dashboard/create_server" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
-        + Create New Server
+  <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">My Servers</h1>
+      {% if servers %}
+      <a href="/dashboard/create_server" class="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg shadow-sm transition flex items-center font-medium">
+        <i class="fas fa-plus mr-2"></i> Create New Server
       </a>
+      {% endif %}
     </div>
 
     {% if servers %}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for server in servers %}
-          <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-xl font-semibold">{{ server.name }}</h2>
-            <p class="text-gray-600 mt-1">Version: {{ server.version }}</p>
-            <p class="text-gray-600">Loader: {{ server.loader }}</p>
-            <p class="text-gray-600">Created: {{ server.created_at }}</p>
-            <a href="/dashboard/server_management/{{ server.id }}" class="text-blue-600 mt-4 inline-block hover:underline">Manage</a>
+          <div class="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition">
+            <div class="p-6">
+              <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">{{ server.name }}</h2>
+                <span class="px-2 py-1 rounded-full text-xs font-medium {% if server.status == 'online' %}bg-green-100 text-green-800{% elif server.status == 'offline' %}bg-gray-100 text-gray-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                  {{ server.status|default('offline')|capitalize }}
+                </span>
+              </div>
+
+              <div class="space-y-2 mb-6">
+                <div class="flex items-center text-gray-600">
+                  <i class="fas fa-tag w-5 text-gray-400"></i>
+                  <span>Version: {{ server.version }}</span>
+                </div>
+                <div class="flex items-center text-gray-600">
+                  <i class="fas fa-plug w-5 text-gray-400"></i>
+                  <span>Loader: {{ server.loader }}</span>
+                </div>
+                <div class="flex items-center text-gray-600">
+                  <i class="far fa-calendar-alt w-5 text-gray-400"></i>
+                  <span>Created: {{ server.created_at }}</span>
+                </div>
+                {% if server.status == 'online' %}
+                <div class="flex items-center text-gray-600">
+                  <i class="fas fa-users w-5 text-gray-400"></i>
+                  <span>Players: {{ server.player_count|default('0') }}/{{ server.max_players|default('20') }}</span>
+                </div>
+                {% endif %}
+              </div>
+
+              <div class="flex space-x-2">
+                <a href="/dashboard/server_management/{{ server.id }}" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg text-center font-medium transition">
+                  <i class="fas fa-cog mr-1"></i> Manage
+                </a>
+                {% if server.status == 'online' %}
+                <button class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition">
+                  <i class="fas fa-stop"></i>
+                </button>
+                {% else %}
+                <button class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition">
+                  <i class="fas fa-play"></i>
+                </button>
+                {% endif %}
+              </div>
+            </div>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <p>No servers found. Create one to get started!</p>
+      <div class="flex flex-col items-center justify-center h-96 text-center">
+        <div class="w-24 h-24 mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+          <i class="fas fa-server text-5xl text-gray-400"></i>
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-800 mb-2">No servers yet</h2>
+        <p class="text-gray-600 max-w-md mb-8">Create your first Minecraft server to start managing your game worlds</p>
+        <a href="/dashboard/create_server" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium shadow-sm transition flex items-center">
+          <i class="fas fa-plus mr-2"></i> Create Your First Server
+        </a>
+      </div>
     {% endif %}
   </main>
 </body>
